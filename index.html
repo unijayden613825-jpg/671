@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPBL 賽前先發公布 - 球迷觀看端</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+        .bg-grid { background-size: 30px 30px; background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px); }
+        .glow-text { text-shadow: 0 0 15px rgba(234, 179, 8, 0.5); }
+    </style>
+</head>
+<body class="bg-grid min-h-screen pb-16">
+    <!-- 頂部導覽 -->
+    <header class="bg-gray-900/90 border-b border-gray-800 sticky top-0 z-50 backdrop-blur">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-baseball text-yellow-500 text-xl animate-spin" style="animation-duration: 6s;"></i>
+                <span class="font-black text-lg tracking-wider bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">CPBL 先發公布</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span id="syncStatus" class="text-xs px-2.5 py-1 rounded-full bg-emerald-900/60 text-emerald-400 border border-emerald-700/55 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 連線同步中
+                </span>
+                <a href="coach_admin.html" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 transition">
+                    <i class="fa-solid fa-lock mr-1"></i> 教練登入
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 pt-6 space-y-6">
+        <!-- 賽事對戰 Banner -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border border-gray-700/80 shadow-2xl p-6">
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#eab308_1px,transparent_1px)] [background-size:16px_16px]"></div>
+            
+            <div class="flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-4 relative z-10">
+                <!-- 客隊 -->
+                <div class="flex flex-col items-center md:items-start">
+                    <span class="text-xs tracking-widest text-gray-400 uppercase font-bold mb-1">VISITOR AWAY</span>
+                    <h2 id="awayTeamName" class="text-2xl md:text-3xl font-black text-white">統一獅</h2>
+                </div>
+
+                <!-- VS 與場地資訊 -->
+                <div class="flex flex-col items-center my-2 md:my-0">
+                    <div class="text-3xl font-black italic text-yellow-500 glow-text mb-1">VS</div>
+                    <div id="gameInfo" class="text-xs text-gray-400 bg-gray-900/80 px-3 py-1 rounded-full border border-gray-700">
+                        2026/06/15 (六) 17:05 ｜ 臺北大巨蛋
+                    </div>
+                </div>
+
+                <!-- 主隊 -->
+                <div class="flex flex-col items-center md:items-end">
+                    <span class="text-xs tracking-widest text-yellow-400 uppercase font-bold mb-1">HOME TEAM</span>
+                    <h2 id="homeTeamName" class="text-2xl md:text-3xl font-black text-white">中信兄弟</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- 先發投手比較區 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 客隊先發投手 -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-xl p-4 flex items-center space-x-4">
+                <div class="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center text-2xl font-black text-gray-500 border border-gray-700 flex-shrink-0">
+                    <i class="fa-solid fa-user-ninja"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-400 font-bold block mb-0.5">客隊先發投手</span>
+                    <h3 id="awayPitcherName" class="text-lg font-black text-white">古林睿煬</h3>
+                    <p id="awayPitcherStats" class="text-xs text-yellow-400 mt-1">防禦率 1.82 ｜ 5勝 1敗 ｜ 68 SO</p>
+                </div>
+            </div>
+
+            <!-- 主隊先發投手 -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-xl p-4 flex items-center space-x-4">
+                <div class="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center text-2xl font-black text-yellow-500 border border-gray-700 flex-shrink-0">
+                    <i class="fa-solid fa-user-ninja"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-yellow-400 font-bold block mb-0.5">主隊先發投手</span>
+                    <h3 id="homePitcherName" class="text-lg font-black text-white">德保拉</h3>
+                    <p id="homePitcherStats" class="text-xs text-yellow-400 mt-1">防禦率 2.15 ｜ 7勝 2敗 ｜ 75 SO</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 先發九人打線 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 客隊打線 -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-xl p-5 shadow-lg">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-800">
+                    <h3 id="awayLineupTitle" class="font-black text-base text-gray-200 flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-orange-500"></i> 統一獅 先發打線
+                    </h3>
+                    <span class="text-xs text-gray-400">Visitor Lineup</span>
+                </div>
+                <div id="awayLineupList" class="space-y-2.5">
+                    <!-- 動態載入 -->
+                </div>
+            </div>
+
+            <!-- 主隊打線 -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-xl p-5 shadow-lg">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-800">
+                    <h3 id="homeLineupTitle" class="font-black text-base text-yellow-400 flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-yellow-500"></i> 中信兄弟 先發打線
+                    </h3>
+                    <span class="text-xs text-gray-400">Home Lineup</span>
+                </div>
+                <div id="homeLineupList" class="space-y-2.5">
+                    <!-- 動態載入 -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase 邏輯與即時渲染 -->
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://cpbl-lineup-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function renderLineup(containerId, lineupArray) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            lineupArray.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between bg-gray-800/60 p-2.5 rounded-lg border border-gray-700/50 text-sm";
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="w-6 h-6 rounded bg-gray-700 flex items-center justify-center text-xs font-bold text-yellow-400">${index + 1}</span>
+                        <div>
+                            <span class="font-bold text-white">${player.name}</span>
+                            <span class="text-xs text-gray-400 ml-1.5">[${player.pos}] #${player.num}</span>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-300">AVG ${player.avg}</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // 監聽雲端資料即時更新
+        db.ref('currentMatch').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            document.getElementById('awayTeamName').textContent = data.awayTeam;
+            document.getElementById('homeTeamName').textContent = data.homeTeam;
+            document.getElementById('awayLineupTitle.textContent') // Fix label
+            document.getElementById('gameInfo').textContent = `${data.gameDate} ｜ ${data.stadium}`;
+
+            document.getElementById('awayPitcherName').textContent = data.awayPitcher.name;
+            document.getElementById('awayPitcherStats').textContent = `防禦率 ${data.awayPitcher.era} ｜ ${data.awayPitcher.record} ｜ ${data.awayPitcher.so} SO`;
+
+            document.getElementById('homePitcherName').textContent = data.homePitcher.name;
+            document.getElementById('homePitcherStats').textContent = `防禦率 ${data.homePitcher.era} ｜ ${data.homePitcher.record} ｜ ${data.homePitcher.so} SO`;
+
+            document.getElementById('awayLineupTitle').innerHTML = `<i class="fa-solid fa-shield-halved text-orange-500"></i> ${data.awayTeam} 先發打線`;
+            document.getElementById('homeLineupTitle').innerHTML = `<i class="fa-solid fa-shield-halved text-yellow-500"></i> ${data.homeTeam} 先發打線`;
+
+            if (data.awayLineup) renderLineup('awayLineupList', data.awayLineup);
+            if (data.homeLineup) renderLineup('homeLineupList', data.homeLineup);
+        });
+    </script>
+</body>
+</html>
